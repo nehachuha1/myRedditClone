@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"myredditclone/pkg/handlers"
+	"myredditclone/pkg/posts"
 	"myredditclone/pkg/session"
 	"myredditclone/pkg/user"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 func main() {
 	userRepo := user.NewUserRepository()
+	postRepo := posts.NewPostMemoryRepository()
 	sm := session.NewSessionManager()
 	zapLogger, err := zap.NewProduction()
 
@@ -30,7 +32,11 @@ func main() {
 		Sessions: sm,
 		UserRepo: userRepo,
 	}
-	addHandlersMux := handlers.GenerateRoutes(userHandler)
+	postHandler := handlers.PostHandler{
+		PostsRepo: postRepo,
+		Logger:    logger,
+	}
+	addHandlersMux := handlers.GenerateRoutes(userHandler, postHandler)
 	addProcessingRouter := handlers.PostProcess(addHandlersMux, sm, logger)
 
 	addr := ":8080"

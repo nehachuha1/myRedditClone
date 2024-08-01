@@ -19,7 +19,7 @@ type SessionsManager struct {
 
 func NewSessionManager() *SessionsManager {
 	return &SessionsManager{
-		data: make(map[string]*Session, 100),
+		data: make(map[string]*Session),
 	}
 }
 
@@ -36,8 +36,8 @@ func CreateNewToken(user user.User) (string, error) {
 }
 
 func (sm *SessionsManager) Check(w http.ResponseWriter, r *http.Request) (*Session, error) {
-	token := r.Header.Get("Authorization")
-	_, tokenString, ok := strings.Cut(token, "Bearer")
+	tokenString := r.Header.Get("Authorization")
+	_, tokenString, ok := strings.Cut(tokenString, "Bearer ")
 	if !ok {
 		return nil, ErrNoAuth
 	}

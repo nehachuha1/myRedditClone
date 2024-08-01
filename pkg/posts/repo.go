@@ -42,7 +42,8 @@ func (repo *PostMemoryRepository) GetAll() ([]Post, error) {
 }
 
 func (repo *PostMemoryRepository) GetByID(id string) (Post, error) {
-	repo.mu.Lock()
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
 	post, ok := repo.data[id]
 	if !ok {
 		return Post{}, ErrRecordNotFound
@@ -52,8 +53,8 @@ func (repo *PostMemoryRepository) GetByID(id string) (Post, error) {
 
 func (repo *PostMemoryRepository) Add(item *Post) (lastID uint64, err error) {
 	repo.mu.Lock()
-	atomic.AddUint64(&repo.lastID, 1)
 	defer repo.mu.Unlock()
+	atomic.AddUint64(&repo.lastID, 1)
 	item.ID = strconv.FormatUint(repo.lastID, 10)
 	repo.data[item.ID] = *item
 	return repo.lastID, nil
@@ -93,7 +94,7 @@ func (repo *PostMemoryRepository) AddComment(postID string, newCommentBody strin
 		return Post{}, ErrRecordNotFound
 	}
 	comm := Comment{
-		Created: time.Now().String(),
+		Created: time.Now().Format("2006-01-02T15:04:05.000"),
 		Author: Author{
 			Username: sess.Login,
 			ID:       strconv.FormatUint(sess.UserID, 10),
@@ -112,6 +113,7 @@ func (repo *PostMemoryRepository) AddComment(postID string, newCommentBody strin
 func (repo *PostMemoryRepository) DeleteComment(postID string, commID string, sess session.Session) (Post, error) {
 	repo.mu.RLock()
 	post, ok := repo.data[postID]
+	repo.mu.RUnlock()
 	if !ok {
 		return Post{}, ErrRecordNotFound
 	}
